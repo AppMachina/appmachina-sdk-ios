@@ -2,7 +2,7 @@
 import PackageDescription
 
 let version = "3.0.0"
-let checksum = "8018ea4ba5886c9765e339a9280ff43d72bfaf93db7d7887cae97925e0f5eba8"
+let checksum = "4f2d037eb95b670a67aed724c6f27da8ae3f7754d42e22fbc44ec09155763f8e"
 
 let package = Package(
     name: "AppMachina",
