@@ -802,7 +802,7 @@ open class AppMachinaCoreHandle:
     open func drainBatch(count: UInt32) throws -> String? {
         return try FfiConverterOptionString.lift(rustCallWithError(FfiConverterTypeUniFFIError.lift) {
             uniffi_appmachina_core_fn_method_appmachinacorehandle_drain_batch(self.uniffiClonePointer(),
-                                                                      FfiConverterUInt32.lower(count), $0)
+                                                                              FfiConverterUInt32.lower(count), $0)
         })
     }
 
@@ -825,8 +825,8 @@ open class AppMachinaCoreHandle:
     open func floorRetryDelay(backoffMs: UInt64, retryAfterSeconds: UInt64?) -> UInt64 {
         return try! FfiConverterUInt64.lift(try! rustCall {
             uniffi_appmachina_core_fn_method_appmachinacorehandle_floor_retry_delay(self.uniffiClonePointer(),
-                                                                            FfiConverterUInt64.lower(backoffMs),
-                                                                            FfiConverterOptionUInt64.lower(retryAfterSeconds), $0)
+                                                                                    FfiConverterUInt64.lower(backoffMs),
+                                                                                    FfiConverterOptionUInt64.lower(retryAfterSeconds), $0)
         })
     }
 
@@ -883,8 +883,8 @@ open class AppMachinaCoreHandle:
      */
     open func group(groupId: String, propertiesJson: String?) throws { try rustCallWithError(FfiConverterTypeUniFFIError.lift) {
         uniffi_appmachina_core_fn_method_appmachinacorehandle_group(self.uniffiClonePointer(),
-                                                            FfiConverterString.lower(groupId),
-                                                            FfiConverterOptionString.lower(propertiesJson), $0)
+                                                                    FfiConverterString.lower(groupId),
+                                                                    FfiConverterOptionString.lower(propertiesJson), $0)
     }
     }
 
@@ -893,7 +893,7 @@ open class AppMachinaCoreHandle:
      */
     open func identify(userId: String) throws { try rustCallWithError(FfiConverterTypeUniFFIError.lift) {
         uniffi_appmachina_core_fn_method_appmachinacorehandle_identify(self.uniffiClonePointer(),
-                                                               FfiConverterString.lower(userId), $0)
+                                                                       FfiConverterString.lower(userId), $0)
     }
     }
 
@@ -940,7 +940,7 @@ open class AppMachinaCoreHandle:
     open func requeueEvents(eventsJson: String) throws -> UInt32 {
         return try FfiConverterUInt32.lift(rustCallWithError(FfiConverterTypeUniFFIError.lift) {
             uniffi_appmachina_core_fn_method_appmachinacorehandle_requeue_events(self.uniffiClonePointer(),
-                                                                         FfiConverterString.lower(eventsJson), $0)
+                                                                                 FfiConverterString.lower(eventsJson), $0)
         })
     }
 
@@ -958,10 +958,10 @@ open class AppMachinaCoreHandle:
      */
     open func screen(screenName: String, propertiesJson: String?, userId: String?, anonymousId: String?) throws { try rustCallWithError(FfiConverterTypeUniFFIError.lift) {
         uniffi_appmachina_core_fn_method_appmachinacorehandle_screen(self.uniffiClonePointer(),
-                                                             FfiConverterString.lower(screenName),
-                                                             FfiConverterOptionString.lower(propertiesJson),
-                                                             FfiConverterOptionString.lower(userId),
-                                                             FfiConverterOptionString.lower(anonymousId), $0)
+                                                                     FfiConverterString.lower(screenName),
+                                                                     FfiConverterOptionString.lower(propertiesJson),
+                                                                     FfiConverterOptionString.lower(userId),
+                                                                     FfiConverterOptionString.lower(anonymousId), $0)
     }
     }
 
@@ -970,7 +970,7 @@ open class AppMachinaCoreHandle:
      */
     open func setConsent(consent: UniFfiConsent) throws { try rustCallWithError(FfiConverterTypeUniFFIError.lift) {
         uniffi_appmachina_core_fn_method_appmachinacorehandle_set_consent(self.uniffiClonePointer(),
-                                                                  FfiConverterTypeUniFFIConsent.lower(consent), $0)
+                                                                          FfiConverterTypeUniFFIConsent.lower(consent), $0)
     }
     }
 
@@ -979,7 +979,7 @@ open class AppMachinaCoreHandle:
      */
     open func setDeviceContext(context: UniFfiDeviceContext) throws { try rustCallWithError(FfiConverterTypeUniFFIError.lift) {
         uniffi_appmachina_core_fn_method_appmachinacorehandle_set_device_context(self.uniffiClonePointer(),
-                                                                         FfiConverterTypeUniFFIDeviceContext.lower(context), $0)
+                                                                                 FfiConverterTypeUniFFIDeviceContext.lower(context), $0)
     }
     }
 
@@ -988,7 +988,7 @@ open class AppMachinaCoreHandle:
      */
     open func setUserProperties(propertiesJson: String) throws { try rustCallWithError(FfiConverterTypeUniFFIError.lift) {
         uniffi_appmachina_core_fn_method_appmachinacorehandle_set_user_properties(self.uniffiClonePointer(),
-                                                                          FfiConverterString.lower(propertiesJson), $0)
+                                                                                  FfiConverterString.lower(propertiesJson), $0)
     }
     }
 
@@ -999,7 +999,7 @@ open class AppMachinaCoreHandle:
      */
     open func setUserPropertiesOnce(propertiesJson: String) throws { try rustCallWithError(FfiConverterTypeUniFFIError.lift) {
         uniffi_appmachina_core_fn_method_appmachinacorehandle_set_user_properties_once(self.uniffiClonePointer(),
-                                                                               FfiConverterString.lower(propertiesJson), $0)
+                                                                                       FfiConverterString.lower(propertiesJson), $0)
     }
     }
 
@@ -1019,10 +1019,10 @@ open class AppMachinaCoreHandle:
      */
     open func track(eventName: String, propertiesJson: String?, userId: String?, anonymousId: String?) throws { try rustCallWithError(FfiConverterTypeUniFFIError.lift) {
         uniffi_appmachina_core_fn_method_appmachinacorehandle_track(self.uniffiClonePointer(),
-                                                            FfiConverterString.lower(eventName),
-                                                            FfiConverterOptionString.lower(propertiesJson),
-                                                            FfiConverterOptionString.lower(userId),
-                                                            FfiConverterOptionString.lower(anonymousId), $0)
+                                                                    FfiConverterString.lower(eventName),
+                                                                    FfiConverterOptionString.lower(propertiesJson),
+                                                                    FfiConverterOptionString.lower(userId),
+                                                                    FfiConverterOptionString.lower(anonymousId), $0)
     }
     }
 
@@ -1032,8 +1032,8 @@ open class AppMachinaCoreHandle:
      */
     open func updateRemoteConfig(configJson: String, etag: String?) throws { try rustCallWithError(FfiConverterTypeUniFFIError.lift) {
         uniffi_appmachina_core_fn_method_appmachinacorehandle_update_remote_config(self.uniffiClonePointer(),
-                                                                           FfiConverterString.lower(configJson),
-                                                                           FfiConverterOptionString.lower(etag), $0)
+                                                                                   FfiConverterString.lower(configJson),
+                                                                                   FfiConverterOptionString.lower(etag), $0)
     }
     }
 
@@ -1049,8 +1049,8 @@ open class AppMachinaCoreHandle:
     open func updateRetryAfter(status: UInt16, retryAfterHeader: String?) -> UInt64? {
         return try! FfiConverterOptionUInt64.lift(try! rustCall {
             uniffi_appmachina_core_fn_method_appmachinacorehandle_update_retry_after(self.uniffiClonePointer(),
-                                                                             FfiConverterUInt16.lower(status),
-                                                                             FfiConverterOptionString.lower(retryAfterHeader), $0)
+                                                                                     FfiConverterUInt16.lower(status),
+                                                                                     FfiConverterOptionString.lower(retryAfterHeader), $0)
         })
     }
 }
@@ -1915,94 +1915,94 @@ private var initializationResult: InitializationResult = {
     if bindings_contract_version != scaffolding_contract_version {
         return InitializationResult.contractVersionMismatch
     }
-    if uniffi_appmachina_core_checksum_method_appmachinacorehandle_clear_retry_after() != 8622 {
+    if uniffi_appmachina_core_checksum_method_appmachinacorehandle_clear_retry_after() != 56207 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_appmachina_core_checksum_method_appmachinacorehandle_config_etag() != 32954 {
+    if uniffi_appmachina_core_checksum_method_appmachinacorehandle_config_etag() != 40903 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_appmachina_core_checksum_method_appmachinacorehandle_config_headers_json() != 37167 {
+    if uniffi_appmachina_core_checksum_method_appmachinacorehandle_config_headers_json() != 52622 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_appmachina_core_checksum_method_appmachinacorehandle_config_url() != 19268 {
+    if uniffi_appmachina_core_checksum_method_appmachinacorehandle_config_url() != 56256 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_appmachina_core_checksum_method_appmachinacorehandle_drain_batch() != 55938 {
+    if uniffi_appmachina_core_checksum_method_appmachinacorehandle_drain_batch() != 27006 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_appmachina_core_checksum_method_appmachinacorehandle_events_url() != 60400 {
+    if uniffi_appmachina_core_checksum_method_appmachinacorehandle_events_url() != 28840 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_appmachina_core_checksum_method_appmachinacorehandle_floor_retry_delay() != 12493 {
+    if uniffi_appmachina_core_checksum_method_appmachinacorehandle_floor_retry_delay() != 56539 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_appmachina_core_checksum_method_appmachinacorehandle_flush() != 23417 {
+    if uniffi_appmachina_core_checksum_method_appmachinacorehandle_flush() != 7832 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_appmachina_core_checksum_method_appmachinacorehandle_flush_headers_json() != 38513 {
+    if uniffi_appmachina_core_checksum_method_appmachinacorehandle_flush_headers_json() != 36462 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_appmachina_core_checksum_method_appmachinacorehandle_get_consent_state() != 9433 {
+    if uniffi_appmachina_core_checksum_method_appmachinacorehandle_get_consent_state() != 29262 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_appmachina_core_checksum_method_appmachinacorehandle_get_remote_config_json() != 7987 {
+    if uniffi_appmachina_core_checksum_method_appmachinacorehandle_get_remote_config_json() != 15709 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_appmachina_core_checksum_method_appmachinacorehandle_get_session_id() != 55035 {
+    if uniffi_appmachina_core_checksum_method_appmachinacorehandle_get_session_id() != 11040 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_appmachina_core_checksum_method_appmachinacorehandle_group() != 32224 {
+    if uniffi_appmachina_core_checksum_method_appmachinacorehandle_group() != 38911 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_appmachina_core_checksum_method_appmachinacorehandle_identify() != 37268 {
+    if uniffi_appmachina_core_checksum_method_appmachinacorehandle_identify() != 58052 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_appmachina_core_checksum_method_appmachinacorehandle_is_initialized() != 18204 {
+    if uniffi_appmachina_core_checksum_method_appmachinacorehandle_is_initialized() != 44847 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_appmachina_core_checksum_method_appmachinacorehandle_is_retry_after_active() != 34554 {
+    if uniffi_appmachina_core_checksum_method_appmachinacorehandle_is_retry_after_active() != 61975 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_appmachina_core_checksum_method_appmachinacorehandle_mark_config_not_modified() != 63447 {
+    if uniffi_appmachina_core_checksum_method_appmachinacorehandle_mark_config_not_modified() != 19476 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_appmachina_core_checksum_method_appmachinacorehandle_queue_depth() != 24089 {
+    if uniffi_appmachina_core_checksum_method_appmachinacorehandle_queue_depth() != 6809 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_appmachina_core_checksum_method_appmachinacorehandle_requeue_events() != 51517 {
+    if uniffi_appmachina_core_checksum_method_appmachinacorehandle_requeue_events() != 27344 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_appmachina_core_checksum_method_appmachinacorehandle_retry_after_remaining_ms() != 29171 {
+    if uniffi_appmachina_core_checksum_method_appmachinacorehandle_retry_after_remaining_ms() != 11277 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_appmachina_core_checksum_method_appmachinacorehandle_screen() != 7823 {
+    if uniffi_appmachina_core_checksum_method_appmachinacorehandle_screen() != 24378 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_appmachina_core_checksum_method_appmachinacorehandle_set_consent() != 13127 {
+    if uniffi_appmachina_core_checksum_method_appmachinacorehandle_set_consent() != 29292 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_appmachina_core_checksum_method_appmachinacorehandle_set_device_context() != 5842 {
+    if uniffi_appmachina_core_checksum_method_appmachinacorehandle_set_device_context() != 46342 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_appmachina_core_checksum_method_appmachinacorehandle_set_user_properties() != 23268 {
+    if uniffi_appmachina_core_checksum_method_appmachinacorehandle_set_user_properties() != 16024 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_appmachina_core_checksum_method_appmachinacorehandle_set_user_properties_once() != 28344 {
+    if uniffi_appmachina_core_checksum_method_appmachinacorehandle_set_user_properties_once() != 2056 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_appmachina_core_checksum_method_appmachinacorehandle_shutdown() != 44265 {
+    if uniffi_appmachina_core_checksum_method_appmachinacorehandle_shutdown() != 35492 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_appmachina_core_checksum_method_appmachinacorehandle_track() != 24128 {
+    if uniffi_appmachina_core_checksum_method_appmachinacorehandle_track() != 7440 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_appmachina_core_checksum_method_appmachinacorehandle_update_remote_config() != 60771 {
+    if uniffi_appmachina_core_checksum_method_appmachinacorehandle_update_remote_config() != 24228 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_appmachina_core_checksum_method_appmachinacorehandle_update_retry_after() != 51500 {
+    if uniffi_appmachina_core_checksum_method_appmachinacorehandle_update_retry_after() != 57189 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_appmachina_core_checksum_constructor_appmachinacorehandle_init() != 21460 {
+    if uniffi_appmachina_core_checksum_constructor_appmachinacorehandle_init() != 60297 {
         return InitializationResult.apiChecksumMismatch
     }
 

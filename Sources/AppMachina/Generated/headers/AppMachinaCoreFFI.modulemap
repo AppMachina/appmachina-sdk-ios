@@ -1,5 +1,4 @@
-framework module AppMachinaCoreFFI {
+module AppMachinaCoreFFI {
     header "AppMachinaCoreFFI.h"
-    link "layers_core"
     export *
 }
