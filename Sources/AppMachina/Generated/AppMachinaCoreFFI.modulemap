@@ -1,0 +1,4 @@
+module AppMachinaCoreFFI {
+    header "AppMachinaCoreFFI.h"
+    export *
+}

@@ -1,0 +1,195 @@
+import Foundation
+import os.log
+
+/// Optional Superwall integration for AppMachina.
+///
+/// Tracks paywall events (presentation, dismiss, purchase, skip) when
+/// Superwall triggers them. Does **not** import SuperwallKit — instead,
+/// it exposes a duck-typed API that accepts the raw event values your app
+/// extracts from Superwall callbacks.
+///
+/// **Usage with SuperwallKit:**
+/// ```swift
+/// import SuperwallKit
+///
+/// class MySuperwallDelegate: SuperwallDelegate {
+///     func handleSuperwallEvent(withInfo eventInfo: SuperwallEventInfo) {
+///         AppMachina.shared.superwall.onEvent(
+///             eventName: eventInfo.event.rawName,
+///             params: eventInfo.params
+///         )
+///     }
+///
+///     func paywallWillPresent(withInfo info: PaywallInfo) {
+///         AppMachina.shared.superwall.trackPresentation(
+///             paywallId: info.identifier,
+///             placement: info.name,
+///             experimentId: info.experiment?.id,
+///             variantId: info.experiment?.variant.id
+///         )
+///     }
+///
+///     func paywallWillDismiss(withInfo info: PaywallInfo) {
+///         AppMachina.shared.superwall.trackDismiss(paywallId: info.identifier)
+///     }
+/// }
+/// ```
+@available(iOS 14.0, macOS 12.0, tvOS 14.0, watchOS 7.0, *)
+public final class SuperwallModule: @unchecked Sendable {
+
+    private static let log = OSLog(subsystem: "com.appmachina.sdk", category: "SuperwallModule")
+
+    // MARK: - Properties
+
+    private let lock = NSLock()
+    private var _sdk: AppMachina?
+
+    private var lockedSdk: AppMachina? {
+        lock.lock()
+        defer { lock.unlock() }
+        return _sdk
+    }
+
+    init() {}
+
+    func attach(sdk: AppMachina) {
+        lock.lock()
+        _sdk = sdk
+        lock.unlock()
+    }
+
+    // MARK: - Generic Event Forwarding
+
+    /// Forward any Superwall event to AppMachina, prefixed with `superwall_`.
+    ///
+    /// This is the simplest integration point. Wire it up in your
+    /// `SuperwallDelegate.handleSuperwallEvent(withInfo:)` callback.
+    ///
+    /// - Parameters:
+    ///   - eventName: The raw event name from Superwall (e.g. `"paywall_open"`,
+    ///     `"transaction_start"`). Will be tracked as `"superwall_<eventName>"`.
+    ///   - params: Optional dictionary of event parameters from Superwall.
+    @discardableResult
+    public func onEvent(eventName: String, params: [String: Any]? = nil) -> SafeResult<Void> {
+        guard let sdk = lockedSdk else { return .failure(.notInitialized) }
+        var properties: [String: Any] = ["source": "superwall"]
+        if let params {
+            properties.merge(params) { _, new in new }
+        }
+        return sdk.track("superwall_\(eventName)", properties: properties)
+    }
+
+    // MARK: - Typed Paywall Events
+
+    /// Track that a paywall was presented to the user.
+    ///
+    /// - Parameters:
+    ///   - paywallId: The paywall identifier from `PaywallInfo.identifier`.
+    ///   - placement: The paywall name/placement from `PaywallInfo.name`.
+    ///   - experimentId: Optional A/B test experiment ID.
+    ///   - variantId: Optional A/B test variant ID.
+    @discardableResult
+    public func trackPresentation(
+        paywallId: String,
+        placement: String? = nil,
+        experimentId: String? = nil,
+        variantId: String? = nil
+    ) -> SafeResult<Void> {
+        guard let sdk = lockedSdk else { return .failure(.notInitialized) }
+        var properties: [String: Any] = [
+            "paywall_id": paywallId,
+            "placement": placement ?? "unknown",
+            "source": "superwall"
+        ]
+        if let experimentId, let variantId {
+            properties["ab_test"] = [
+                "id": experimentId,
+                "variant": variantId
+            ]
+        }
+        return sdk.track("paywall_show", properties: properties)
+    }
+
+    /// Track that a paywall was dismissed.
+    ///
+    /// - Parameter paywallId: The paywall identifier from `PaywallInfo.identifier`.
+    @discardableResult
+    public func trackDismiss(paywallId: String) -> SafeResult<Void> {
+        guard let sdk = lockedSdk else { return .failure(.notInitialized) }
+        return sdk.track("paywall_dismiss", properties: [
+            "paywall_id": paywallId,
+            "source": "superwall"
+        ])
+    }
+
+    /// Track a purchase initiated from a Superwall paywall.
+    ///
+    /// - Parameters:
+    ///   - paywallId: The paywall identifier.
+    ///   - productId: The product identifier (e.g. App Store product ID).
+    ///   - price: The product price, if available.
+    ///   - currency: The currency code (e.g. `"USD"`), if available.
+    @discardableResult
+    public func trackPurchase(
+        paywallId: String,
+        productId: String? = nil,
+        price: Decimal? = nil,
+        currency: String? = nil
+    ) -> SafeResult<Void> {
+        guard let sdk = lockedSdk else { return .failure(.notInitialized) }
+        var properties: [String: Any] = [
+            "paywall_id": paywallId,
+            "source": "superwall"
+        ]
+        if let productId { properties["product_id"] = productId }
+        if let price { properties["price"] = NSDecimalNumber(decimal: price).doubleValue }
+        if let currency { properties["currency"] = currency }
+        return sdk.track("paywall_purchase", properties: properties)
+    }
+
+    /// Track that a paywall was skipped (e.g. user holdout, no rule match).
+    ///
+    /// - Parameters:
+    ///   - paywallId: The paywall identifier, if available.
+    ///   - reason: The reason the paywall was skipped (e.g. `"holdout"`,
+    ///     `"no_rule_match"`, `"user_is_subscribed"`).
+    @discardableResult
+    public func trackSkip(paywallId: String? = nil, reason: String) -> SafeResult<Void> {
+        guard let sdk = lockedSdk else { return .failure(.notInitialized) }
+        return sdk.track("paywall_skip", properties: [
+            "paywall_id": paywallId ?? "unknown",
+            "reason": reason,
+            "source": "superwall"
+        ])
+    }
+
+    // MARK: - User Attributes
+
+    /// Pass AppMachina attribution data to Superwall as user attributes.
+    ///
+    /// Call this after AppMachina is initialized to sync attribution data.
+    /// Returns a dictionary suitable for passing to
+    /// `Superwall.instance.setUserAttributes(_:)`.
+    ///
+    /// ```swift
+    /// let attrs = AppMachina.shared.superwall.userAttributes()
+    /// Superwall.instance.setUserAttributes(attrs)
+    /// ```
+    public func userAttributes() -> [String: Any] {
+        guard let sdk = lockedSdk else { return [:] }
+        var attrs: [String: Any] = [:]
+        let installId = AppMachina.getOrCreateInstallId()
+        attrs["appmachina_id"] = installId
+        let anonId = sdk.anonymousId
+        if !anonId.isEmpty {
+            attrs["appmachina_anonymous_id"] = anonId
+        }
+        if let userId = sdk.appUserId {
+            attrs["appmachina_user_id"] = userId
+        }
+        if let sessionId = sdk.sessionId {
+            attrs["appmachina_session_id"] = sessionId
+        }
+        return attrs
+    }
+}
