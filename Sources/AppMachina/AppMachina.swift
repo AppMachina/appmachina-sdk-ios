@@ -411,11 +411,12 @@ public final class AppMachina: @unchecked Sendable, AppMachinaProtocol {
         lock.lock()
         _backgroundObserver = observer
         lock.unlock()
-        // Background flush via BGAppRefreshTask is available in
-        // BackgroundFlushTask.swift. Consumers opt in by calling
-        // BackgroundFlushTask.registerBackgroundFlush() at app launch.
-        // Auto-schedule here so consumers who registered get periodic flushes.
-        BackgroundFlushTask.scheduleBackgroundFlush()
+        // Auto-register the BGTask handler. Idempotent — safe if the app
+        // already called registerBackgroundFlush() from App.init().
+        // If the plist entry is missing, this returns false and we skip scheduling.
+        if BackgroundFlushTask._registerIfNeeded() {
+            BackgroundFlushTask.scheduleBackgroundFlush()
+        }
 
         #endif
 
