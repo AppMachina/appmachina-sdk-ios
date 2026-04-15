@@ -1829,7 +1829,51 @@ public final class AppMachina: @unchecked Sendable, AppMachinaProtocol {
             props["clipboard_attribution_url"] = clipboardUrl
         }
 
-        let json = Self.jsonString(from: props)
+        // First launch with no prior attribution signal: ask the server to
+        // resolve us via device fingerprint against recent /c/:appId clicks.
+        // Run the HTTP + wait entirely on a background queue so the caller's
+        // thread (commonly the main thread during SDK init) never blocks —
+        // blocking the main thread risks the iOS watchdog timer. We emit
+        // app_install / app_open from that background queue AFTER the resolve
+        // completes (or times out) so the CAPI events carry the recovered
+        // click IDs on first launch, which is the entire point of this path.
+        let needsResolve: Bool = {
+            if !isFirstLaunch { return false }
+            lock.lock()
+            defer { lock.unlock() }
+            return _attributionFbclid == nil
+                && _attributionGclid == nil
+                && _attributionTtclid == nil
+                && _attributionMsclkid == nil
+        }()
+
+        if needsResolve {
+            let baseProps = props
+            DispatchQueue.global(qos: .utility).async { [weak self] in
+                guard let self = self else { return }
+                self.resolveClickFromFingerprintBlocking(timeout: 3.0)
+                self.emitAttributionTrackEvents(core: core, baseProps: baseProps, isFirstLaunch: true)
+            }
+            return
+        }
+
+        emitAttributionTrackEvents(core: core, baseProps: props, isFirstLaunch: isFirstLaunch)
+    }
+
+    /// Merge current attribution state into `baseProps` and emit the
+    /// first-launch `app_install` and `app_open` events. Factored out so
+    /// both the sync path (no resolve needed) and the async resolve path
+    /// share one implementation.
+    private func emitAttributionTrackEvents(
+        core: AppMachinaCoreHandle,
+        baseProps: [String: Any],
+        isFirstLaunch: Bool
+    ) {
+        // Merge any attribution state (including click IDs recovered by
+        // resolveClickFromFingerprintBlocking) so the Rust core's track
+        // call sees the complete props map.
+        let mergedProps = mergeAttributionProperties(baseProps)
+        let json = Self.jsonString(from: mergedProps)
         // Send app_install before app_open on first launch for CAPI forwarding
         if isFirstLaunch {
             do {
@@ -1928,6 +1972,127 @@ public final class AppMachina: @unchecked Sendable, AppMachinaProtocol {
         URLSession.shared.dataTask(with: request) { _, _, _ in
             // Best-effort — don't throw on network errors
         }.resume()
+    }
+
+    /// POST a device fingerprint to /clicks/resolve so the server can match
+    /// this first-launch install to a recent /c/:appId click captured in
+    /// Safari before the App Store redirect.
+    ///
+    /// On a successful match, persist the returned click IDs via
+    /// setAttributionData so every subsequent event carries fbclid / gclid /
+    /// ttclid / msclkid. This is the primary iOS web-to-app attribution path
+    /// since iOS has no equivalent of Android's Play Install Referrer.
+    ///
+    /// Blocks the caller up to `timeout` seconds on the first launch so the
+    /// immediately-following `app_install` CAPI event can already carry the
+    /// recovered click ID. On timeout, attribution simply won't be present on
+    /// this exact event — subsequent events will still carry it when the
+    /// URLSession response eventually lands and calls setAttributionData
+    /// (we keep a background completion handler for that path).
+    private func resolveClickFromFingerprintBlocking(timeout: TimeInterval) {
+        lock.lock()
+        let appId = _configAppId
+        let baseUrlConfig = _configBaseUrl
+        let lastCtx = _lastDeviceContext
+        lock.unlock()
+
+        guard let appId = appId else { return }
+
+        let baseUrl = (baseUrlConfig ?? Self.defaultBaseUrl)
+            .trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+        guard let url = URL(string: "\(baseUrl)/clicks/resolve") else { return }
+
+        // Intentionally no client-supplied timestamp — the server anchors the
+        // /clicks/resolve lookback window to its own now() to prevent callers
+        // from scanning historical clicks with crafted past timestamps.
+        var payload: [String: Any] = [
+            "app_id": appId,
+            "platform": "ios",
+            "timezone": TimeZone.current.identifier,
+            "locale": Locale.current.identifier
+        ]
+        if let ctx = lastCtx {
+            if let deviceModel = ctx.deviceModel { payload["device_model"] = deviceModel }
+            if let osVersion = ctx.osVersion { payload["os_version"] = osVersion }
+            if let screenSize = ctx.screenSize { payload["screen_size"] = screenSize }
+        }
+
+        guard let bodyData = try? JSONSerialization.data(withJSONObject: payload, options: [.sortedKeys]) else {
+            return
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.httpBody = bodyData
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue(appId, forHTTPHeaderField: "X-App-Id")
+        request.setValue("swift/\(Self.sdkVersionString())", forHTTPHeaderField: "X-SDK-Version")
+        request.timeoutInterval = timeout
+
+        // Block the caller briefly (up to `timeout`) with a semaphore so the
+        // immediately-following app_install track can carry the recovered
+        // fbclid. If the response lands after the wait expires we still
+        // apply it — subsequent purchase_success etc. will carry it — but
+        // the initial CAPI install event may miss it in that edge case.
+        let sema = DispatchSemaphore(value: 0)
+        let task = URLSession.shared.dataTask(with: request) { [weak self] data, response, _ in
+            defer { sema.signal() }
+            guard let self = self else { return }
+            guard let httpResp = response as? HTTPURLResponse, httpResp.statusCode == 200 else { return }
+            guard let data = data else { return }
+
+            do {
+                guard
+                    let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+                    let success = json["success"] as? Bool, success,
+                    let dataDict = json["data"] as? [String: Any],
+                    let matched = dataDict["matched"] as? Bool, matched
+                else { return }
+
+                let fbclid = dataDict["fbclid"] as? String
+                let gclid = dataDict["gclid"] as? String
+                let ttclid = dataDict["ttclid"] as? String
+                let msclkid = dataDict["msclkid"] as? String
+
+                guard fbclid != nil || gclid != nil || ttclid != nil || msclkid != nil else { return }
+
+                // Merge with existing state so we don't clobber prior values.
+                self.lock.lock()
+                let existingDeeplinkId = self._attributionDeeplinkId
+                let existingGclid = self._attributionGclid
+                let existingFbclid = self._attributionFbclid
+                let existingTtclid = self._attributionTtclid
+                let existingMsclkid = self._attributionMsclkid
+                self.lock.unlock()
+
+                _ = self.setAttributionData(
+                    deeplinkId: existingDeeplinkId,
+                    gclid: gclid ?? existingGclid,
+                    fbclid: fbclid ?? existingFbclid,
+                    ttclid: ttclid ?? existingTtclid,
+                    msclkid: msclkid ?? existingMsclkid
+                )
+
+                if self.enableDebug {
+                    os_log(
+                        "clicks/resolve matched fbclid=%{public}@ gclid=%{public}@ ttclid=%{public}@",
+                        log: Self.log,
+                        type: .debug,
+                        String(describing: fbclid),
+                        String(describing: gclid),
+                        String(describing: ttclid)
+                    )
+                }
+            } catch {
+                // best-effort — swallow JSON/decoding errors
+            }
+        }
+        task.resume()
+        // Wait up to `timeout` seconds for the response to land and
+        // setAttributionData to complete. Timeout is silently accepted —
+        // the task keeps running in the background and later events still
+        // pick up the click IDs via setAttributionData.
+        _ = sema.wait(timeout: .now() + timeout)
     }
 
     /// Return the current timestamp in ISO 8601 format.

@@ -1,8 +1,8 @@
 // swift-tools-version: 5.9
 import PackageDescription
 
-let version = "3.0.2"
-let checksum = "f307776f0135e13445daa5ce0e4cd2746bc41b58913c6b71c025f79dea1e5590"
+let version = "3.0.3"
+let checksum = "8c31d9579282014e42c90c6e43c9e185dfa84071cc839768d3a7b67af3bd18e1"
 
 let package = Package(
     name: "AppMachina",
